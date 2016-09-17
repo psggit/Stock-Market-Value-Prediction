@@ -1,0 +1,218 @@
+
+data= read_excel("E://stk_dataset.xlsx");
+##########################################normalization starts##################################
+
+for(i in 1:3)
+{
+ maxx=max(data[,i])
+ minn=min(data[,i])
+	 for(j in 1:109)
+	 {
+		 data[j,i]=(data[j,i])/(maxx)
+	 }
+ }
+ 
+ maxx=max(data[[5]])
+ minn=min(data[[5]])
+	 for(j in 1:109)
+	 {
+		 data[j,5]=(data[j,5])/(maxx)
+	 }
+################################################################################################
+#step 2 
+#l=4 m=5 n=1
+
+#step3
+#input of hidden layer
+
+vo_matrix=matrix(,4,10);
+for(i in 1:nrow(vo_matrix))
+{
+	for(j in 1:ncol(vo_matrix))
+	{
+		vo_matrix[i,j]=runif(1,-1,1);
+	}
+}
+
+#input of output layer
+
+wo_matrix=matrix(,10,1);
+for(i in 1:nrow(wo_matrix))
+{
+	for(j in 1:ncol(wo_matrix))
+	{
+		wo_matrix[i,j]=runif(1,-1,1);
+	}
+}
+tol=0.09;
+alpha=0.9;
+eta=0.8;
+#initializing del v with zeros
+del_v_matrix=matrix(0,4,10);
+
+#initializing del w with zeros
+del_w_matrix=matrix(0,10,1);
+
+
+E=0;
+flag=0;
+derived_op=c();
+for (k in seq(from=1,to=30,by=1))
+{	flag2=0
+	print("k")
+	print(k)
+	golu=0
+	#algo BPN(forward pass)
+	#print(i)
+	Ii=data[k,]
+	while(flag2==0){
+	golu=golu+1
+	Oi=matrix(,dim(Ii)[2]-1,1);
+	T=Ii[[5]]
+	
+	#step4:
+	for(i in seq(from=1,to=4,by=1))
+	{
+		Oi[i]=Ii[[i]];
+	}
+	
+	#step5:
+	Ih=matrix(,dim(vo_matrix)[1],dim(Oi)[2]);
+	Ih=t(vo_matrix) %*% (Oi);
+	Oh=matrix(,dim(vo_matrix)[2],dim(Oi)[2]);
+	#step6:
+	for(i in 1:length(Ih))
+	{
+		Oh[i]=1/(1+exp(-Ih[i]));
+	}
+	#step7:
+	Io=matrix(,dim(wo_matrix)[2],1);
+	Io=t(wo_matrix) %*% Oh;
+	Oo=matrix(,dim(wo_matrix)[2],1);
+	
+	#step8:
+	
+	for(i in 1:length(Io))
+	{
+		Oo[i]=1/(1+exp(-Io[i]))
+	}
+	for(i in 1:length(Oo))
+	{
+		derived_op=c(derived_op,Oo[i]);
+	}
+	ep=0;
+	#step9:
+	for(i in 1:length(Oo))
+	{
+		ep=ep+((T-Oo[i])^2);
+	}
+	ep=sqrt(ep);
+
+	#step10:
+	d=matrix(,dim(wo_matrix)[2],1);
+	d=(T-Oo)*Oo*(1-Oo);
+	y=matrix(,dim(vo_matrix)[2],dim(wo_matrix)[2]);
+	#step11:
+	y=Oh %*% as.numeric(d);
+	del_w_tplus1=matrix(,dim(y)[1],dim(y)[2]);
+	#step12:
+	del_w_tplus1=alpha*(del_w_matrix)+ eta*y;
+	#step13:
+	e=matrix(,dim(wo_matrix)[1],dim(d)[2]);
+	e=wo_matrix%*%as.numeric(d);
+	dstar=matrix(,dim(wo_matrix)[1],1);
+	for(i in 1:length(e))
+	{
+		#print(E[i])
+		#print(Oh[i])
+		#print(1-Oh[i])
+		dstar[i]=e[i]*Oh[i]*(1-Oh[i]);
+	}
+	X=matrix(,dim(Oi)[1],dim(dstar)[1]);
+	X=as.numeric(Oi) %*% t(dstar)
+	del_vtplus1=matrix(,dim(X)[1],dim(X)[2]);
+	#step14:
+	del_vtplus1=(alpha*(del_v_matrix))+(eta*X);
+	#step15:
+	v_tplus1=matrix(,dim(vo_matrix)[1],dim(del_vtplus1)[2]);
+	w_tplus1=matrix(,dim(wo_matrix)[1],dim(del_w_tplus1)[2]);
+	v_tplus1=(vo_matrix)+(del_vtplus1);
+	w_tplus1=(wo_matrix)+(del_w_tplus1);
+	vo_matrix=v_tplus1;
+	wo_matrix=w_tplus1;
+	del_v_matrix=del_vtplus1;
+	del_w_matrix=del_w_tplus1;
+	if(ep<tol)
+	{
+		
+		#print(ep);
+		#print(k)
+		print("inside tol")
+		flag=1;
+		test=k
+		flag2=1
+	}
+	}
+	#print(E);
+	print("inside k")
+	print(golu)
+}
+#testing##################################
+miss=0;
+hit=0;
+test_err=c()
+for(j in 31:length(data[[1]]))
+{
+
+	Ii=data[j,]
+	#print("Ii")
+	#print(Ii)
+	#print(input_i);
+	Oi=matrix(,dim(Ii)[2]-1,1);
+	T=Ii[[5]]
+	#print("T")
+	#print(T)
+	#step4:
+	for(i in seq(from=1,to=4,by=1))
+	{
+		Oi[i]=Ii[[i]];
+	}
+	#print(Oi)
+	#step5:
+	Ih=matrix(,dim(vo_matrix)[1],dim(Oi)[2]);
+	Ih=t(vo_matrix) %*% (Oi);
+	Oh=matrix(,dim(vo_matrix)[2],dim(Oi)[2]);
+	#step6:
+	for(i in 1:length(Ih))
+	{
+		Oh[i]=1/(1+exp(-Ih[i]));
+	}
+	#step7:
+	Io=matrix(,dim(wo_matrix)[2],1);
+	Io=t(wo_matrix) %*% Oh;
+	Oo=matrix(,dim(wo_matrix)[2],1);
+	
+	#step8:
+	
+	for(i in 1:length(Io))
+	{
+		Oo[i]=1/(1+exp(-Io[i]))
+	}
+	
+	test_err=c(test_err,(round(abs(T-Oo),2)))
+}
+
+x=mean(test_err)
+y=min(test_err)
+for(i in 1:length(test_err)){
+if(test_err[i]>=y && test_err[i]<=x){
+	hit=hit+1
+}
+else{
+	miss=miss+1
+}
+}
+
+
+
+acc=hit/(79)*100
